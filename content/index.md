@@ -2,7 +2,7 @@
 title: 宁宁的物理笔记
 ---
 # 欢迎来到我的量子空间
-这里是我的大三春学习笔记
+这里是我的物理相关学习笔记
 
 清除D:\myblog\xuningsPhysics\content\physics - 副本\picture文件夹里面2026.3.1之前的图片
 ```bash
