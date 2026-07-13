@@ -1,4 +1,0 @@
-low density
-
-
-self training
