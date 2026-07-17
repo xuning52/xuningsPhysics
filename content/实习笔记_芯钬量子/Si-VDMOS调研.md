@@ -12,7 +12,6 @@
 电流输运路径：
 $$\text{源极 } (N^+) \xrightarrow{\text{横向}} \text{P-body 表面反型沟道} \xrightarrow{\text{横向}} \text{栅极下的 } N^- \text{积累层} \xrightarrow{\text{拐弯}} \text{JFET 夹缝区} \xrightarrow{\text{纵向向下}} N^- \text{漂移区} \xrightarrow{\text{纵向}} N^+ \text{衬底} \rightarrow \text{漏极}$$
 
-
 参考 **6.21.1 平面 VD-MOSFET 工艺**
 ![[Pasted image 20260713120131.png]]
 - **Step 1：外延与结终端准备**
