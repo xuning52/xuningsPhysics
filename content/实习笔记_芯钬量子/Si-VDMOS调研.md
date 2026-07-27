@@ -202,6 +202,66 @@ $$BV_{CEO} = \frac{BV_{CBO}}{\beta^{1/6}}$$
 
 
 ## 3. 器件仿真所需物理模型与材料参数
+### 3.1 器件材料参数 (Device Material Parameters)
+
+本仿真项目基于 Nuwa TCAD 器件材料库（Device Mater Definition），根据 Si-VDMOS 器件的物理结构与工艺过程，共实例化并映射了 **5 种核心材料**。具体材料分类、功能定义及映射关系如下表所示：
+
+### 1. 材料映射与类型定义表
+
+|**序号**|**材料名称 (Alias)**|**原材料类型 (Mater Type)**|**晶体结构 (Lattice System)**|**在 VDMOS 器件中的功能与应用区域**|
+|---|---|---|---|---|
+|**1**|**Si**|Inorganic Semiconductor (无机半导体)|Cubic (正方/立方晶系)|**衬底与外延层**：构成 P-body、N- Drift 漂移区及 N+ 源区|
+|**2**|**Poly**|Inorganic Semiconductor (无机半导体)|-|**栅极导电层**：多晶硅多晶栅，控制器件沟道开启|
+|**3**|**SiO2**|Insulator (绝缘体)|-|**栅介质层与介质隔离**：栅氧化层及表面 passivation 钝化保护|
+|**4**|**Photores**|Insulator (绝缘体)|-|**光刻胶**：工艺掩膜层（工艺仿真阶段使用）|
+|**5**|**Al**|Resistor (导体/电阻)|-|**电极引出金属**：源极（Source）、漏极（Drain）及栅极引线接触|
+
+
+
+### 3.2 物理模型与求解器配置参数 (Physical Models & Solver Settings)
+
+本求解模块（`IV` 节点中的 `RunBlock_00001`）主要用于计算 Si-VDMOS 的**低漏压转移特性（$I_D-V_{GS}$ 曲线）与表面能带/电势分布**。整个求解过程分为热平衡初始化、漏极预加压、栅极电压扫描及物理量提取四个阶段。
+
+#### 3.2.1 求解器工作流与偏置配置 (Solver Workflow & Biasing)
+
+|**步骤**|**节点名称**|**求解类型 (Type)**|**关键设置与偏置条件**|**物理意义/仿真目的**|
+|---|---|---|---|---|
+|**Step 1**|**equil1**|`equilibrium`|零偏置热平衡态|计算器件在未加电状态下的本征费米能级、初始电势分布与载流子平衡分布。|
+|**Step 2**|**Vd**|`single scan`|$V_{Drain} = 0.1\text{ V}$|为漏极施加 $0.1\text{ V}$ 的小偏置电压，使器件工作在线性导通区预备状态。|
+|**Step 3**|**Vg**|`single scan`|$V_{Gate} = 0.0\text{ V} \rightarrow 2.0\text{ V}$|扫描栅极电压至 $2.0\text{ V}$，用于求解转移特性 $I_D-V_{GS}$ 曲线及提取阈值电压 $V_{th}$。|
+|**Step 4**|**Scan Plot**|-|$I_{Drain} \text{ vs } V_{Gate}$|实时提取并绘制 $V_{GS}-I_D$ 特性曲线（Scan 3-3）。|
+
+#### 3.2.2 物理量提取与切线采样 (1D Cutlines & Data Extraction)
+
+在热平衡及扫描过程中，通过设置 **1D Cutline（一维切线）** 对关键区域进行了物理物理量采样：
+
+- **采样切线坐标**：由 $(-1.5\ \mu\text{m}, -0.1\ \mu\text{m})$ 至 $(1.5\ \mu\text{m}, -0.1\ \mu\text{m})$，横穿 MOSFET 栅氧下方的反型沟道/表面区域。
+    
+- **采样物理量**：
+    
+    - **Potential 2D**：提取表面/沟道电势分布，分析栅极电场对反型层形成的调控作用。
+        
+    - **Band Diagram 2D**：提取能带图（导带 $E_c$、价带 $E_v$ 与费米能级 $E_f$），观察强反型条件下的能带弯曲。
+        
+
+#### 3.2.3 关联物理模型配置 (Physics Models Summary)
+在低漏压（$V_{DS} = 0.1\text{ V}$）转移特性求解中，求解器重点调用了以下收敛与输运模型：
+
+1. **载流子统计模型 (Carrier Statistics)**：
+    
+    - 默认采用 **玻尔兹曼统计 (Boltzmann Statistics)** 或 **费米-狄拉克统计 (Fermi-Dirac)**（针对高掺杂源/漏区）。
+        
+2. **低场/表面迁移率模型 (Low-Field & Surface Mobility)**：
+    
+    - 采用与表面散射及掺杂浓度相关的迁移率模型，准确模拟 MOS 沟道反型层内的电子导电能力。
+        
+3. **求解算法 (Numerical Solver)**：
+    
+    - 采用 **Newton 迭代法（牛顿法）** 全耦合求解泊松方程（Poisson Equation）与电子/空穴连续性方程（Continuity Equations）。
+        
+
+
+
 
 
 
