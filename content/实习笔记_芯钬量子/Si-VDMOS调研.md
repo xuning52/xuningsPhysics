@@ -268,7 +268,65 @@ $$BV_{CEO} = \frac{BV_{CBO}}{\beta^{1/6}}$$
 附有电极的器件结构：![[Pasted image 20260730134643.png]]
 
 
+平衡态下器件中Potential2D 分布![[Pasted image 20260730135441.png]]
+
+
+
+![[Pasted image 20260730140324.png]]
+正交质量图![[Pasted image 20260730140425.png]]
+偏斜度![[Pasted image 20260730140457.png]]
+
 
 ### 4.2 仿真结果与指标提取
 > **本节目的**：展示器件的标准电学曲线，并从中提取核心静态参数（$V_{th}$、$R_{DS(on)}$、$BV_{DSS}$）。分析各物理模型对器件性能的影响
+
+#### 4.2.1 击穿特性曲线
+IV_jichuan
+
+1. 模型选择：
+	1. 为了测量击穿特性，在结构模型配置化界面加入了ImpactIonization模型。
+	
+	2. 低场迁移率模型IALMob，高场迁移率模型Canali（`IALMob` 的全称是 **Inversion and Accumulation Layer Mobility Model**（反型层与反型/累积层迁移率模型）。在 TCAD 物理求解器中，它是 **Lombardi CVT 模型** 的增强版/变体。）
+	![[Pasted image 20260728150809.png]]
+2. 开始测量击穿特性（$BV_{DSS}$）。核心思路是：**关断栅极（$V_{GS}=0\text{V}$），然后将漏极电压 $V_{DS}$ 从 $0\text{V}$ 扫描到一个足够高的电压，直到观察到漏极电流 $I_D$ 发生急剧上升。**
+3. 画出击穿特性曲线，151-152v击穿。
+4. ![[Pasted image 20260728164854.png]]
+
+遇到的问题及解决思路        
+1. 扫描变量错设成了“漏极电流（Current: Drain）”，导致报错。
+	```
+	Bias Scan #2: [Current: Drain]
+	Scanning [Current: Drain] from 0[A/m] to 0.1[A/m] with step 0.1[A/m]...
+	```
+	修改为“漏极电压（Voltage: Drain）”后，扫描击穿电压无报错。
+2. 修改后，再次报错：是典型的 **TCAD 仿真击穿/强非线性不收敛报错**。从 $V_D = 0\text{V}$ 一直扫到 $151\text{V}$ 时，收敛都很顺畅。但到了 $152\text{V}$ 左右，电流突然剧烈上升。
+	1. 原因：
+		1. **器件已经达到（或超越）击穿电压（Breakdown Voltage）**
+		    - 在 $150\text{V} \sim 152\text{V}$ 附近，雪崩击穿（Avalanche Breakdown）被剧烈触发，载流子浓度和电流呈指数级暴增。
+		    - **好消息**：这说明Si-VDMOS **击穿特性曲线已经跑出来了**！它的耐压值大约就在 **$150\text{V} \sim 152\text{V}$** 附近。
+	    2. **牛顿迭代法在强非线性区域失效**
+		    - 击穿发生时，电场极高、碰撞电离率（Impact Ionization）极度敏感，载流子生成的微小变化会导致解的剧烈波动，导致默认的电压扫描（Voltage Scan）无法继续前进。
+	2. 解决方法：将bias scan中vd范围改为151（将扫描终点设定在击穿点附近），做耐压测试。
+
+#### 4.2.2 转移特性曲线
+IV_zhuanyi
+1. 模型选择：关闭碰撞电离模型（Impact Ionization）；保持之前的迁移率模型：**Low Field Mobility（低场迁移率）**: `IALMob`（界面/杂质散射迁移率）**High Field Mobility（高场饱和迁移率）**: `Canali`（速度饱和模型）
+2. 转移特性曲线（$I_D-V_{GS}$）：
+	![[Pasted image 20260728171931.png]]
+3. **阈值电压 $V_{TH}$ 的提取**：
+	1. 找曲线最大斜率处的切线交 $X$ 轴的位置（最大跨导法 / 外推法）
+	2. $V_{GS} = 1.5\text{V}$ 时，$I_D = 4.22 \times 10^{-5}\text{ A/m}$（此时处于通道刚要开启的临界/亚阈值区）；$V_{GS} = 2.0\text{V}$ 时，$I_D = 3.88 \times 10^{-4}\text{ A/m}$（电流比 $1.5\text{V}$ 时爆增了近一个数量级，通道明显急剧开启）。从线性坐标图上看，曲线在 **$V_{GS} = 1.5\text{V} \sim 2.0\text{V}$** 之间发生了非常明显的折折抬升。
+	3. 提取 $V_{TH}$：
+		1. 
+			- **点 1 ($A$)**：$(x_1, y_1) = (1.5\text{ V},\ 4.22088 \times 10^{-5}\text{ A/m})$
+			- **点 2 ($B$)**：$(x_2, y_2) = (2.0\text{ V},\ 3.88045 \times 10^{-4}\text{ A/m})$
+			- 交点 $x_0$即为$V_{TH}$：$x_0 = x_1 - \frac{y_1}{k} = 1.5 - \frac{4.22088 \times 10^{-5}}{6.916724 \times 10^{-4}} \approx 1.5 - 0.06102 = \mathbf{1.439\text{ V}}$
+
+	4. 图中数据![[Pasted image 20260728172128.png]]![[Pasted image 20260728172137.png]]
+
+#### 4.2.3 输出特性曲线
+（$I_D-V_{DS}$）曲线图像： ![[Pasted image 20260729154756.png]]![[Pasted image 20260729154833.png]]![[Pasted image 20260729154847.png]]
+- 上面三条线（对应数据组 **#21-30**、**#39-48**、**#60-69**）几乎完全重合、电流峰值都在 14~15 A/m 左右。
+	-  我的猜测：栅极电压（$V_{GS}$）已经达到了饱和状态。
+
 
